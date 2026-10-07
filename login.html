@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login | Arc&amp;Line</title><link rel="stylesheet" href="css/style.css"></head>
+<body><header id="site-header"></header>
+<main><div class="form"><h1>Login</h1>
+<form id="login"><label>Email</label><input type="email" name="email" required><label>Password</label><input type="password" name="password" required><br><br><button class="btn">Login</button></form>
+<br><hr style="border:0;border-top:1px solid #e2e2e2"><br><h1>Register</h1>
+<form id="reg"><label>Full Name</label><input name="fullName" required><label>Email</label><input type="email" name="email" required>
+<label>Phone Number</label><input type="tel" name="phone" required><label>Password (min 6 characters)</label><input type="password" name="password" minlength="6" required><br><br><button class="btn">Create account</button></form>
+<div id="msg"></div></div></main>
+<footer id="site-footer"></footer>
+<script type="module">
+import { initLayout } from './js/ui.js';
+
+import { login, register } from './js/auth.js';
+await initLayout();
+const msg = (t, err) => document.getElementById('msg').innerHTML = `<div class="msg ${err ? 'err' : ''}">${t}</div>`;
+const next = new URLSearchParams(location.search).get('next') || 'account.html';
+document.getElementById('login').onsubmit = async e => {
+  e.preventDefault(); const f = e.target;
+  const { error } = await login(f.email.value, f.password.value);
+  error ? msg(error.message, true) : location.href = next;
+};
+document.getElementById('reg').onsubmit = async e => {
+  e.preventDefault(); const f = e.target;
+  const { data, error } = await register({ fullName: f.fullName.value, email: f.email.value, phone: f.phone.value, password: f.password.value });
+  if (error) return msg(error.message, true);
+  data.session ? location.href = next : msg('Account created. Check your email to confirm, then log in.');
+};
+</script></body></html>

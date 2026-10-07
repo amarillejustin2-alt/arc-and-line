@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account | Arc&amp;Line</title><link rel="stylesheet" href="css/style.css"></head>
+<body><header id="site-header"></header>
+<main><h1>My Account</h1><div class="form"><form id="profile"><label>Full Name</label><input name="full_name" required>
+<label>Email</label><input name="email" disabled><label>Phone</label><input name="phone"><br><br><button class="btn">Save changes</button></form><div id="msg"></div></div>
+<br><h2>My Orders</h2><div id="orders"></div></main>
+<footer id="site-footer"></footer>
+<script type="module">
+import { initLayout } from './js/ui.js';
+
+import { requireLogin, getProfile } from './js/auth.js';
+import { supabase } from './js/supabaseClient.js';
+import { money, esc } from './js/ui.js';
+await initLayout();
+const user = await requireLogin();
+if (user) {
+  const f = document.getElementById('profile'), pr = await getProfile();
+  f.full_name.value = pr.full_name || ''; f.email.value = pr.email || ''; f.phone.value = pr.phone || '';
+  f.onsubmit = async e => { e.preventDefault();
+    const { error } = await supabase.from('profiles').update({ full_name: f.full_name.value, phone: f.phone.value }).eq('id', user.id);
+    document.getElementById('msg').innerHTML = `<div class="msg">${error ? error.message : 'Saved.'}</div>`; };
+  if (new URLSearchParams(location.search).get('placed')) document.getElementById('msg').innerHTML = '<div class="msg">Order placed. Payment is pending.</div>';
+  const { data: orders } = await supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
+  document.getElementById('orders').innerHTML = (orders || []).map(o => `<div class="order"><strong>${o.order_number}</strong>
+    <span class="muted"> · ${new Date(o.created_at).toLocaleDateString()}</span><p>
+    <span class="badge">Payment: ${o.payment_status}</span><span class="badge">Order: ${o.order_status}</span></p>
+    ${o.order_items.map(i => `<p class="muted">${esc(i.product_name)} · ${i.size} × ${i.quantity}</p>`).join('')}
+    <strong>Total ${money(o.total)}</strong></div>`).join('') || '<p class="muted">No orders yet.</p>';
+}
+</script></body></html>

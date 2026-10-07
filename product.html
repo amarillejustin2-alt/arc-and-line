@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product | Arc&amp;Line</title><link rel="stylesheet" href="css/style.css"></head>
+<body><header id="site-header"></header>
+<main id="box"><p class="muted">Loading…</p></main>
+<footer id="site-footer"></footer>
+<script type="module">
+import { initLayout } from './js/ui.js';
+
+import { fetchProduct, productImage } from './js/products.js';
+import { addToCart } from './js/cart.js';
+import { money, esc, toast } from './js/ui.js';
+await initLayout();
+const p = await fetchProduct(new URLSearchParams(location.search).get('id'));
+const box = document.getElementById('box');
+if (!p) { box.innerHTML = '<p>Product not found. <a href="shop.html">Back to shop</a></p>'; }
+else {
+  let size = null;
+  box.innerHTML = `<div class="product"><div>${productImage(p)}</div><div>
+    <h1>${esc(p.name)}</h1><p class="price" style="font-size:1.4rem">${money(p.price)}</p>
+    <p>${esc(p.description)}</p><label>Size</label>
+    <div class="sizes">${p.product_sizes.map(s => `<button ${s.stock < 1 ? 'disabled' : ''} data-size="${s.size}" data-stock="${s.stock}">${s.size}</button>`).join('')}</div>
+    <label>Quantity</label><input type="number" id="qty" value="1" min="1" style="width:100px">
+    <p class="muted" id="stock">Select a size</p><br><button class="btn" id="add">Add to Cart</button></div></div>`;
+  box.querySelectorAll('.sizes button').forEach(b => b.onclick = () => {
+    box.querySelectorAll('.sizes button').forEach(x => x.classList.remove('sel')); b.classList.add('sel');
+    size = b.dataset.size; document.getElementById('qty').max = b.dataset.stock; document.getElementById('stock').textContent = b.dataset.stock + ' in stock';
+  });
+  document.getElementById('add').onclick = async () => {
+    if (!size) return toast('Please select a size');
+    const qty = Math.max(1, Number(document.getElementById('qty').value) || 1);
+    if (await addToCart(p.id, size, qty)) { toast('Added to cart'); initLayout(); }
+  };
+}
+</script></body></html>

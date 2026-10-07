@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home | Arc&amp;Line</title><link rel="stylesheet" href="css/style.css"></head>
+<body><header id="site-header"></header>
+<section class="hero" id="hero"><h1 data-content="hero_title">ARC&amp;LINE</h1><p class="tag" data-content="hero_tagline">DEFINED BY THE GAME.</p>
+<p data-content="hero_description">Basketball-inspired streetwear made for those who move differently.</p>
+<a class="btn light" href="shop.html" data-content="hero_button">SHOP NOW</a></section>
+<main><h2>Featured Collection</h2><div class="grid" id="featured"></div></main>
+<footer id="site-footer"></footer>
+<script type="module">
+import { initLayout } from './js/ui.js';
+
+import { fetchProducts, renderGrid } from './js/products.js';
+const content = await initLayout();
+// Hero image comes from Admin > Website Content
+if (content.hero_image) document.getElementById('hero').style.backgroundImage = `linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)), url('${content.hero_image}')`;
+// Featured = products ticked 'featured' in admin; falls back to the 4 newest
+let list = await fetchProducts({ featured: true, limit: 4 });
+if (!list.length) list = await fetchProducts({ limit: 4 });
+renderGrid(document.getElementById('featured'), list);
+</script></body></html>
