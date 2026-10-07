@@ -1,50 +1,153 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Checkout | Arc&amp;Line</title><link rel="stylesheet" href="css/style.css"></head>
-<body><header id="site-header"></header>
-<main><h1>Checkout</h1><form class="checkout" id="co"><div>
-<h2>Customer Information</h2><label>Full Name</label><input name="full_name" required><div class="grid2"><div><label>Email</label><input type="email" name="email" required></div><div><label>Phone Number</label><input type="tel" name="phone" required></div></div>
-<h2 style="margin-top:28px">Delivery Information</h2><div class="grid2"><div><label>House/Unit Number</label><input name="house" required></div><div><label>Street</label><input name="street" required></div>
-<div><label>Barangay</label><input name="barangay" required></div><div><label>City/Municipality</label><input name="city" required></div>
-<div><label>Province</label><input name="province" required></div><div><label>Postal Code</label><input name="postal" required></div></div>
-<h2 style="margin-top:28px">Payment</h2>   <select name="method"><option value="cod" selected>Cash on Delivery (COD)</option><option value="gcash">GCash</option><option value="card">Credit / Debit Card</option></select>
-<p class="muted" id="pay-note">You will pay securely through the payment provider. Card details are never stored by Arc&amp;Line.</p><div id="msg"></div></div>
-<div class="summary"><h2>Order Summary</h2><div id="sum"></div><br><button class="btn" style="width:100%" id="pay">Pay now</button></div></form></main>
-<footer id="site-footer"></footer>
-<script type="module">
-import { initLayout } from './js/ui.js';
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout | Arc&amp;Line</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
 
-import { requireLogin, getProfile } from './js/auth.js';
-import { getCart, getShippingFee } from './js/cart.js';
-import { supabase } from './js/supabaseClient.js';
-import { startPayment } from './js/payment.js';
-import { money, esc } from './js/ui.js';
-await initLayout();
-if (await requireLogin()) {
-  const f = document.getElementById('co'), pr = await getProfile(), items = await getCart(), ship = await getShippingFee();
-  if (!items.length) location.href = 'cart.html';
-  f.full_name.value = pr.full_name || ''; f.email.value = pr.email || ''; f.phone.value = pr.phone || '';
-  const sub = items.reduce((n, i) => n + i.products.price * i.quantity, 0);
-  document.getElementById('sum').innerHTML = items.map(i => `<div><span>${esc(i.products.name)} (${i.size}) × ${i.quantity}</span><span>${money(i.products.price * i.quantity)}</span></div>`).join('') +
-   function updatePayUI() {
-  const cod = f.method.value === 'cod';
-  document.getElementById('pay').textContent = cod ? 'Place order' : 'Pay now';
-  document.getElementById('pay-note').textContent = cod
-    ? 'Pay in cash when your order arrives. Please prepare the exact amount.'
-    : 'You will pay securely through the payment provider. Card details are never stored by Arc&Line.';
-}
-f.method.onchange = updatePayUI; updatePayUI();
-f.onsubmit = async e => {
-  e.preventDefault(); const btn = document.getElementById('pay'); btn.disabled = true;
+  <main>
+    <h1>Checkout</h1>
+    <form class="checkout" id="co">
+      <div>
+        <h2>Customer Information</h2>
+        <label>Full Name</label>
+        <input name="full_name" required>
+        <div class="grid2">
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" required>
+          </div>
+          <div>
+            <label>Phone Number</label>
+            <input type="tel" name="phone" required>
+          </div>
+        </div>
 
-    e.preventDefault(); const btn = document.getElementById('pay'); btn.disabled = true;
-    // The database function re-checks prices and stock, then creates the order
-    const { data: orderId, error } = await supabase.rpc('create_order', {
-      p_full_name: f.full_name.value, p_email: f.email.value, p_phone: f.phone.value,
-      p_address: [f.house.value, f.street.value, 'Brgy. ' + f.barangay.value].join(', '),
-      p_city: f.city.value, p_province: f.province.value, p_postal_code: f.postal.value, p_payment_method: f.method.value });
-    if (error) { document.getElementById('msg').innerHTML = `<div class="msg err">${esc(error.message)}</div>`; btn.disabled = false; return; }
-    await startPayment(orderId, f.method.value);
-  };
-}
-</script></body></html>
+        <h2 style="margin-top:28px">Delivery Information</h2>
+        <div class="grid2">
+          <div>
+            <label>House/Unit Number</label>
+            <input name="house" required>
+          </div>
+          <div>
+            <label>Street</label>
+            <input name="street" required>
+          </div>
+          <div>
+            <label>Barangay</label>
+            <input name="barangay" required>
+          </div>
+          <div>
+            <label>City/Municipality</label>
+            <input name="city" required>
+          </div>
+          <div>
+            <label>Province</label>
+            <input name="province" required>
+          </div>
+          <div>
+            <label>Postal Code</label>
+            <input name="postal" required>
+          </div>
+        </div>
+
+        <h2 style="margin-top:28px">Payment</h2>
+        <select name="method">
+          <option value="cod" selected>Cash on Delivery (COD)</option>
+          <option value="gcash">GCash</option>
+          <option value="card">Credit / Debit Card</option>
+        </select>
+        <p class="muted" id="pay-note">Pay in cash when your order arrives. Please prepare the exact amount.</p>
+        <div id="msg"></div>
+      </div>
+
+      <div class="summary">
+        <h2>Order Summary</h2>
+        <div id="sum"></div>
+        <br>
+        <button type="submit" class="btn" style="width:100%" id="pay">Place order</button>
+      </div>
+    </form>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script type="module">
+    import { initLayout, money, esc } from './js/ui.js';
+    import { requireLogin, getProfile } from './js/auth.js';
+    import { getCart, getShippingFee } from './js/cart.js';
+    import { supabase } from './js/supabaseClient.js';
+    import { startPayment } from './js/payment.js';
+
+    await initLayout();
+
+    if (await requireLogin()) {
+      const f = document.getElementById('co');
+      const pr = await getProfile();
+      const items = await getCart();
+      const ship = await getShippingFee();
+
+      if (!items.length) location.href = 'cart.html';
+
+      // Pre-fill customer info from profile
+      f.full_name.value = pr.full_name || '';
+      f.email.value = pr.email || '';
+      f.phone.value = pr.phone || '';
+
+      // Order summary
+      const sub = items.reduce((n, i) => n + i.products.price * i.quantity, 0);
+
+      document.getElementById('sum').innerHTML =
+        items.map(i =>
+          <div><span>${esc(i.products.name)} (${i.size}) × ${i.quantity}</span><span>${money(i.products.price * i.quantity)}</span></div>
+        ).join('') +
+        <div><span>Subtotal</span><span>${money(sub)}</span></div> +
+        <div><span>Shipping</span><span>${money(ship)}</span></div> +
+        <div><strong>Total</strong><strong>${money(sub + ship)}</strong></div>;
+
+      // Update button text and note depending on payment method
+      function updatePayUI() {
+        const cod = f.method.value === 'cod';
+        document.getElementById('pay').textContent = cod ? 'Place order' : 'Pay now';
+        document.getElementById('pay-note').textContent = cod
+          ? 'Pay in cash when your order arrives. Please prepare the exact amount.'
+          : 'You will pay securely through the payment provider. Card details are never stored by Arc&Line.';
+      }
+      f.method.onchange = updatePayUI;
+      updatePayUI();
+
+      // Submit order
+      f.onsubmit = async e => {
+        e.preventDefault();
+        const btn = document.getElementById('pay');
+        btn.disabled = true;
+        document.getElementById('msg').innerHTML = '';
+
+        // The database function re-checks prices and stock, then creates the order
+        const { data: orderId, error } = await supabase.rpc('create_order', {
+          p_full_name: f.full_name.value,
+          p_email: f.email.value,
+          p_phone: f.phone.value,
+          p_address: [f.house.value, f.street.value, 'Brgy. ' + f.barangay.value].join(', '),
+          p_city: f.city.value,
+          p_province: f.province.value,
+          p_postal_code: f.postal.value,
+          p_payment_method: f.method.value
+        });
+
+        if (error) {
+          document.getElementById('msg').innerHTML = <div class="msg err">${esc(error.message)}</div>;
+          btn.disabled = false;
+          return;
+        }
+
+        await startPayment(orderId, f.method.value);
+      };
+    }
+  </script>
+</body>
+</html>
