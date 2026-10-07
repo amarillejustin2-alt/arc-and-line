@@ -1,32 +1,82 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cart | Arc&amp;Line</title><link rel="stylesheet" href="css/style.css"></head>
-<body><header id="site-header"></header>
-<main><h2>Your Cart</h2><div id="cart"></div></main>
-<footer id="site-footer"></footer>
-<script type="module">
-import { initLayout } from './js/ui.js';
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cart | Arc&amp;Line</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
 
-import { requireLogin } from './js/auth.js';
-import { getCart, updateQty, removeItem, getShippingFee } from './js/cart.js';
-import { money, esc } from './js/ui.js';
-import { productImage } from './js/products.js';
-await initLayout();
-if (await requireLogin()) draw();
-async function draw() {
-  const items = await getCart(), ship = await getShippingFee(), el = document.getElementById('cart');
-  if (!items.length) { el.innerHTML = '<p>Your cart is empty.</p><a class="btn" href="shop.html">Continue shopping</a>'; return; }
-  const sub = items.reduce((n, i) => n + i.products.price * i.quantity, 0);
-  el.innerHTML = items.map(i => `<div class="line" data-id="${i.id}">
-      <div>${productImage(i.products)}</div><div><strong>${esc(i.products.name)}</strong><p class="muted">Size ${i.size} · ${money(i.products.price)}</p></div>
-      <input class="qty" type="number" min="1" value="${i.quantity}"><div class="lt">${money(i.products.price * i.quantity)}</div>
-      <button class="rm" title="Remove" style="border:0;background:none;font-size:1.3rem;cursor:pointer">×</button></div>`).join('') +
-    `<div class="summary" style="max-width:380px;margin:24px 0 0 auto"><div><span>Subtotal</span><span>${money(sub)}</span></div>
-      <div><span>Shipping</span><span>${money(ship)}</span></div><div class="total"><span>Total</span><span>${money(sub + ship)}</span></div>
-      <br><a class="btn" href="checkout.html" style="display:block;text-align:center">Proceed to Checkout</a></div>`;
-  el.querySelectorAll('.line').forEach(row => {
-    row.querySelector('.qty').onchange = async e => { await updateQty(row.dataset.id, Math.max(1, +e.target.value || 1)); draw(); };
-    row.querySelector('.rm').onclick = async () => { await removeItem(row.dataset.id); draw(); initLayout(); };
-  });
-}
-</script></body></html>
+  <main>
+    <h2>Your Cart</h2>
+    <div id="cart"></div>
+  </main>
+
+  <footer id="site-footer"></footer>
+
+  <script type="module">
+    import { initLayout, money, esc } from './js/ui.js';
+    import { requireLogin } from './js/auth.js';
+    import { getCart, updateQty, removeItem, getShippingFee } from './js/cart.js';
+    import { productImage } from './js/products.js';
+
+    const el = document.getElementById('cart');
+
+    async function draw() {
+      try {
+        // Skip any cart rows whose product no longer exists
+        const items = ((await getCart()) || []).filter(i => i.products);
+        const ship = (await getShippingFee()) || 0;
+
+        if (!items.length) {
+          el.innerHTML = '<p>Your cart is empty.</p><a class="btn" href="shop.html">Continue shopping</a>';
+          return;
+        }
+
+        const sub = items.reduce((n, i) => n + i.products.price * i.quantity, 0);
+
+        el.innerHTML =
+          items.map(i => `
+            <div class="line" data-id="${i.id}">
+              <div>${productImage(i.products)}</div>
+              <div>
+                <strong>${esc(i.products.name)}</strong>
+                <p class="muted">Size ${esc(i.size)} · ${money(i.products.price)}</p>
+              </div>
+              <input class="qty" type="number" min="1" value="${i.quantity}">
+              <div class="lt">${money(i.products.price * i.quantity)}</div>
+              <button class="rm" title="Remove" style="border:0;background:none;font-size:1.3rem;cursor:pointer">×</button>
+            </div>`).join('') +
+          `<div class="summary" style="max-width:380px;margin:24px 0 0 auto">
+            <div><span>Subtotal</span><span>${money(sub)}</span></div>
+            <div><span>Shipping</span><span>${money(ship)}</span></div>
+            <div class="total"><span>Total</span><span>${money(sub + ship)}</span></div>
+            <br>
+            <a class="btn" href="checkout.html" style="display:block;text-align:center">Proceed to Checkout</a>
+          </div>`;
+
+        el.querySelectorAll('.line').forEach(row => {
+          row.querySelector('.qty').onchange = async e => {
+            await updateQty(row.dataset.id, Math.max(1, parseInt(e.target.value, 10) || 1));
+            await draw();
+            initLayout();
+          };
+          row.querySelector('.rm').onclick = async () => {
+            await removeItem(row.dataset.id);
+            await draw();
+            initLayout();
+          };
+        });
+      } catch (err) {
+        console.error(err);
+        el.innerHTML = '<div class="msg err">May error sa pag-load ng cart: ' + esc(err.message || String(err)) + '</div>';
+      }
+    }
+
+    await initLayout();
+    if (await requireLogin()) await draw();
+  </script>
+</body>
+</html>
