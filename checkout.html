@@ -7,7 +7,7 @@
 <h2 style="margin-top:28px">Delivery Information</h2><div class="grid2"><div><label>House/Unit Number</label><input name="house" required></div><div><label>Street</label><input name="street" required></div>
 <div><label>Barangay</label><input name="barangay" required></div><div><label>City/Municipality</label><input name="city" required></div>
 <div><label>Province</label><input name="province" required></div><div><label>Postal Code</label><input name="postal" required></div></div>
-<h2 style="margin-top:28px">Payment</h2>select name="method"><option value="cod" selected>Cash on Delivery (COD)</option><option value="gcash">GCash</option><option value="card">Credit / Debit Card</option></select>
+<h2 style="margin-top:28px">Payment</h2>   <select name="method"><option value="cod" selected>Cash on Delivery (COD)</option><option value="gcash">GCash</option><option value="card">Credit / Debit Card</option></select>
 <p class="muted" id="pay-note">You will pay securely through the payment provider. Card details are never stored by Arc&amp;Line.</p><div id="msg"></div></div>
 <div class="summary"><h2>Order Summary</h2><div id="sum"></div><br><button class="btn" style="width:100%" id="pay">Pay now</button></div></form></main>
 <footer id="site-footer"></footer>
@@ -26,8 +26,17 @@ if (await requireLogin()) {
   f.full_name.value = pr.full_name || ''; f.email.value = pr.email || ''; f.phone.value = pr.phone || '';
   const sub = items.reduce((n, i) => n + i.products.price * i.quantity, 0);
   document.getElementById('sum').innerHTML = items.map(i => `<div><span>${esc(i.products.name)} (${i.size}) × ${i.quantity}</span><span>${money(i.products.price * i.quantity)}</span></div>`).join('') +
-    `<div><span>Shipping</span><span>${money(ship)}</span></div><div class="total"><span>Total</span><span>${money(sub + ship)}</span></div>`;
-  f.onsubmit = async e => {
+   function updatePayUI() {
+  const cod = f.method.value === 'cod';
+  document.getElementById('pay').textContent = cod ? 'Place order' : 'Pay now';
+  document.getElementById('pay-note').textContent = cod
+    ? 'Pay in cash when your order arrives. Please prepare the exact amount.'
+    : 'You will pay securely through the payment provider. Card details are never stored by Arc&Line.';
+}
+f.method.onchange = updatePayUI; updatePayUI();
+f.onsubmit = async e => {
+  e.preventDefault(); const btn = document.getElementById('pay'); btn.disabled = true;
+
     e.preventDefault(); const btn = document.getElementById('pay'); btn.disabled = true;
     // The database function re-checks prices and stock, then creates the order
     const { data: orderId, error } = await supabase.rpc('create_order', {
